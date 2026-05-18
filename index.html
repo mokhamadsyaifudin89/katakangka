@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katak Pintar: Lompat Matematika</title>
+    <!-- Tailwind CSS untuk Styling Cepat & Cantik -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font: Fredoka untuk kesan ramah anak -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #0d2b1d;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Animasi Mengambang Daun Teratai */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(1deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .floating-leaf {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .floating-leaf-delayed {
+            animation: float 4s ease-in-out infinite;
+            animation-delay: 2s;
+        }
+
+        /* Animasi Katak Bernapas */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05) scaleY(0.95); }
+        }
+        .frog-breathe {
+            animation: breathe 2s ease-in-out infinite;
+        }
+
+        /* Efek Air Bergelombang (Riak) */
+        @keyframes ripple-effect {
+            0% {
+                transform: translate(-50%, -50%) scale(0.2);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2.5);
+                opacity: 0;
+            }
+        }
+        .water-ripple {
+            position: absolute;
+            border: 4px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: ripple-effect 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        /* Efek Daun Jatuh ketika salah */
+        @keyframes fall-down {
+            0% { transform: translateY(0) rotate(0); opacity: 1; }
+            100% { transform: translateY(500px) rotate(45deg); opacity: 0; }
+        }
+        .leaf-fall {
+            animation: fall-down 1s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+        }
+
+        /* Hujan Ringan Menggunakan Canvas */
+        #rain-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Scrollbar kustom untuk grid */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex flex-col justify-between text-white overflow-hidden">
+
+    <!-- Efek Hujan -->
+    <canvas id="rain-canvas"></canvas>
+
+    <!-- Header Global -->
+    <header class="w-full bg-emerald-900/80 backdrop-blur-md px-6 py-3 flex justify-between items-center z-20 border-b border-emerald-700/50">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="backToMenu()">
+            <span class="text-3xl">🐸</span>
+            <h1 class="text-xl md:text-2xl font-bold tracking-wider bg-gradient-to-r from-green-300 to-emerald-400 bg-clip-text text-transparent">
+                Katak Pintar <span class="text-xs md:text-sm text-yellow-300 block md:inline font-normal">Lompat Matematika</span>
+            </h1>
+        </div>
+        
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <!-- Toggle BGM -->
+            <button id="btn-bgm" onclick="toggleBGM()" class="bg-emerald-800 hover:bg-emerald-700 transition px-3 py-1.5 rounded-full flex items-center space-x-1.5 text-sm font-semibold border border-emerald-600 shadow-md">
+                <span id="bgm-icon">🔇</span> <span class="hidden md:inline">Musik</span>
+            </button>
+            <!-- Panduan singkat -->
+            <button onclick="toggleHelp()" class="bg-emerald-800 hover:bg-emerald-700 transition w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border border-emerald-600 shadow-md">
+                ?
+            </button>
+            <!-- Tombol Fullscreen -->
+            <button onclick="toggleFullScreen()" class="bg-emerald-800 hover:bg-emerald-700 transition px-3 py-1.5 rounded-full flex items-center space-x-1.5 text-sm font-semibold border border-emerald-600 shadow-md">
+                🖥️ <span class="hidden md:inline">Layar Penuh</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN MENU SCREEN -->
+    <main id="menu-screen" class="flex-1 flex flex-col items-center justify-center p-6 z-10 overflow-y-auto max-w-4xl mx-auto w-full">
+        <!-- Maskot & Judul Besar -->
+        <div class="text-center mb-8 relative">
+            <div class="relative inline-block floating-leaf">
+                <!-- Daun Teratai SVG -->
+                <svg class="w-48 h-16 md:w-64 md:h-20 text-emerald-500 fill-current drop-shadow-lg" viewBox="0 0 100 30">
+                    <path d="M 5 15 C 5 25, 95 25, 95 15 C 95 5, 55 5, 50 15 C 45 5, 5 5, 5 15 Z"/>
+                </svg>
+                <!-- Katak Lucu SVG di atas daun -->
+                <svg class="w-20 h-20 md:w-28 md:h-28 absolute -top-14 left-1/2 transform -translate-x-1/2 frog-breathe" viewBox="0 0 100 100">
+                    <!-- Badan -->
+                    <ellipse cx="50" cy="65" rx="35" ry="25" fill="#4ade80" />
+                    <!-- Perut -->
+                    <ellipse cx="50" cy="72" rx="22" ry="15" fill="#fef08a" />
+                    <!-- Mata Kiri -->
+                    <circle cx="32" cy="40" r="14" fill="#4ade80" />
+                    <circle cx="32" cy="40" r="10" fill="white" />
+                    <circle cx="34" cy="40" r="5" fill="black" />
+                    <circle cx="31" cy="37" r="2" fill="white" />
+                    <!-- Mata Kanan -->
+                    <circle cx="68" cy="40" r="14" fill="#4ade80" />
+                    <circle cx="68" cy="40" r="10" fill="white" />
+                    <circle cx="66" cy="40" r="5" fill="black" />
+                    <circle cx="65" cy="37" r="2" fill="white" />
+                    <!-- Mulut Senyum -->
+                    <path d="M 40 65 Q 50 75, 60 65" stroke="#166534" stroke-width="3" fill="none" stroke-linecap="round" />
+                    <!-- Pipinya Merah Merona -->
+                    <circle cx="28" cy="63" r="4" fill="#f87171" opacity="0.6" />
+                    <circle cx="72" cy="63" r="4" fill="#f87171" opacity="0.6" />
+                    <!-- Kaki depan -->
+                    <ellipse cx="40" cy="85" rx="6" ry="10" fill="#22c55e" />
+                    <ellipse cx="60" cy="85" rx="6" ry="10" fill="#22c55e" />
+                </svg>
+            </div>
+            
+            <h2 class="text-4xl md:text-5xl font-black mt-6 tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-amber-500 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
+                FROGGY JUMPS
+            </h2>
+            <p class="text-green-300 text-sm md:text-md mt-2 font-semibold tracking-widest uppercase">
+                Game Edukasi Matematika Perkalian & Pembagian SD Kelas 2
+            </p>
+        </div>
+
+        <!-- Pengaturan Soal -->
+        <div class="w-full max-w-md bg-emerald-950/75 border border-emerald-700/60 p-6 rounded-3xl shadow-2xl mb-8">
+            <h3 class="text-lg font-bold text-green-300 mb-3 text-center uppercase tracking-wider">🛠️ Setelan Soal</h3>
+            
+            <!-- Pilihan Operasi -->
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-emerald-400 mb-2 uppercase">Operasi Matematika:</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="opt-op-all" onclick="setOperation('all')" class="py-2 px-3 rounded-xl font-bold border-2 border-yellow-400 bg-yellow-500/20 text-yellow-300 transition text-sm">
+                        Campuran
+                    </button>
+                    <button id="opt-op-mult" onclick="setOperation('mult')" class="py-2 px-3 rounded-xl font-bold border-2 border-emerald-700 bg-emerald-900/40 text-emerald-300 hover:border-emerald-600 transition text-sm">
+                        Perkalian
+                    </button>
+                    <button id="opt-op-div" onclick="setOperation('div')" class="py-2 px-3 rounded-xl font-bold border-2 border-emerald-700 bg-emerald-900/40 text-emerald-300 hover:border-emerald-600 transition text-sm">
+                        Pembagian
+                    </button>
+                </div>
+            </div>
+
+            <!-- Batas Waktu -->
+            <div>
+                <label class="block text-xs font-semibold text-emerald-400 mb-2 uppercase">Batas Waktu per Soal:</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="opt-time-off" onclick="setTimerOption(0)" class="py-2 px-3 rounded-xl font-bold border-2 border-yellow-400 bg-yellow-500/20 text-yellow-300 transition text-sm">
+                        Tanpa Waktu
+                    </button>
+                    <button id="opt-time-10" onclick="setTimerOption(10)" class="py-2 px-3 rounded-xl font-bold border-2 border-emerald-700 bg-emerald-900/40 text-emerald-300 hover:border-emerald-600 transition text-sm">
+                        10 Detik
+                    </button>
+                    <button id="opt-time-20" onclick="setTimerOption(20)" class="py-2 px-3 rounded-xl font-bold border-2 border-emerald-700 bg-emerald-900/40 text-emerald-300 hover:border-emerald-600 transition text-sm">
+                        20 Detik
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pilihan Mode Permainan -->
+        <div class="w-full max-w-md space-y-3">
+            <h3 class="text-xs font-bold text-center text-emerald-400 uppercase tracking-widest mb-1">Pilih Mode Bermain:</h3>
+            
+            <!-- SOLO -->
+            <button onclick="startGame(1)" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 transition-all transform hover:-translate-y-1 active:translate-y-0 rounded-2xl font-bold text-xl shadow-[0_4px_15px_rgba(74,222,128,0.3)] border-b-4 border-emerald-700 flex items-center justify-between px-6">
+                <span class="flex items-center space-x-3">
+                    <span class="text-2xl">👤</span>
+                    <span class="text-left block">
+                        <span class="block text-white text-lg font-bold leading-tight">Solo Mode</span>
+                        <span class="block text-emerald-200 text-xs font-normal">Satu Pemain - Fokus Belajar</span>
+                    </span>
+                </span>
+                <span class="bg-emerald-800 text-xs px-2 py-1 rounded-md text-green-300">MULAI</span>
+            </button>
+
+            <!-- DUEL -->
+            <button onclick="startGame(2)" class="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 transition-all transform hover:-translate-y-1 active:translate-y-0 rounded-2xl font-bold text-xl shadow-[0_4px_15px_rgba(59,130,246,0.3)] border-b-4 border-indigo-700 flex items-center justify-between px-6">
+                <span class="flex items-center space-x-3">
+                    <span class="text-2xl">👥</span>
+                    <span class="text-left block">
+                        <span class="block text-white text-lg font-bold leading-tight">Duel Mode (Layar Belah)</span>
+                        <span class="block text-blue-200 text-xs font-normal">2 Pemain - Saling Beradu Cepat</span>
+                    </span>
+                </span>
+                <span class="bg-indigo-800 text-xs px-2 py-1 rounded-md text-blue-300">MULAI</span>
+            </button>
+
+            <!-- SQUAD -->
+            <button onclick="startGame(4)" class="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 transition-all transform hover:-translate-y-1 active:translate-y-0 rounded-2xl font-bold text-xl shadow-[0_4px_15px_rgba(245,158,11,0.3)] border-b-4 border-orange-700 flex items-center justify-between px-6">
+                <span class="flex items-center space-x-3">
+                    <span class="text-2xl">🦖</span>
+                    <span class="text-left block">
+                        <span class="block text-white text-lg font-bold leading-tight">Squad Mode (2x2 Grid)</span>
+                        <span class="block text-amber-200 text-xs font-normal">4 Pemain - Keramaian Edukatif!</span>
+                    </span>
+                </span>
+                <span class="bg-orange-800 text-xs px-2 py-1 rounded-md text-amber-300">MULAI</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- PANDUAN MODAL -->
+    <div id="help-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-emerald-950 border-2 border-emerald-500 p-6 rounded-3xl max-w-md w-full relative">
+            <button onclick="toggleHelp()" class="absolute top-4 right-4 text-emerald-400 hover:text-white text-2xl font-bold">&times;</button>
+            <h3 class="text-2xl font-bold text-yellow-300 mb-4 flex items-center gap-2">
+                <span>📖</span> Cara Bermain
+            </h3>
+            <ul class="space-y-3 text-sm text-green-100 list-disc list-inside">
+                <li>Pilih mode bermain: <strong>Solo</strong>, <strong>Duel</strong>, atau <strong>Squad</strong>.</li>
+                <li>Selesaikan soal matematika perkalian / pembagian yang muncul di papan atas.</li>
+                <li>Pilih satu di antara 4 daun teratai dengan jawaban yang menurutmu benar.</li>
+                <li><strong>Jika Benar:</strong> Katak melompat mulus ke daun tersebut dan kamu mendapat poin!</li>
+                <li><strong>Jika Salah:</strong> Katak akan terjebak jatuh ke air dan kamu akan kehilangan 1 nyawa (total 3 nyawa).</li>
+                <li><strong>Metode Input (Duel & Squad):</strong> Kamu bisa mengeklik/tap langsung daun jawaban pada layarmu, atau gunakan tombol bantuan yang ada di bagian bawah masing-masing area.</li>
+            </ul>
+            <button onclick="toggleHelp()" class="mt-6 w-full py-2 bg-emerald-600 hover:bg-emerald-500 transition rounded-xl font-bold text-white">
+                Saya Mengerti!
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME ARENA SCREEN (Dinamis Berdasarkan Mode) -->
+    <main id="game-screen" class="flex-1 hidden w-full h-full relative z-10 p-2 flex flex-row flex-wrap items-stretch justify-center bg-teal-950/20">
+        <!-- Area Konten Game Dimasukkan Lewat JavaScript -->
+    </main>
+
+    <!-- GAME OVER SCREEN MODAL -->
+    <div id="gameover-modal" class="fixed inset-0 bg-black/85 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-gradient-to-b from-emerald-900 to-emerald-950 border-4 border-yellow-400 p-8 rounded-3xl max-w-lg w-full text-center relative shadow-2xl">
+            <h3 class="text-4xl font-black text-yellow-400 tracking-wide mb-2 uppercase">🎉 Permainan Selesai!</h3>
+            <p class="text-green-300 text-sm mb-6">Berikut adalah perolehan skor akhir para pemain:</p>
+
+            <!-- Ringkasan Hasil Pemain -->
+            <div id="gameover-results" class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2">
+                <!-- Diisi Dinamis oleh JS -->
+            </div>
+
+            <!-- Tombol Navigasi -->
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="restartGame()" class="py-3 px-4 bg-yellow-500 hover:bg-yellow-400 text-emerald-950 rounded-2xl font-bold text-lg transition shadow-lg transform active:scale-95">
+                    🔄 Main Lagi
+                </button>
+                <button onclick="backToMenu()" class="py-3 px-4 bg-emerald-700 hover:bg-emerald-600 text-white rounded-2xl font-bold text-lg transition shadow-lg transform active:scale-95">
+                    🏠 Menu Utama
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Global -->
+    <footer class="w-full bg-emerald-950/50 py-1.5 text-center text-[10px] md:text-xs text-green-400/70 z-10 pointer-events-none">
+        Katak Pintar &copy; 2026 • Dirancang untuk Kelas 2 SD
+    </footer>
+
+    <!-- JAVASCRIPT GAME ENGINE -->
+    <script>
+        // --- DATA STATE GLOBAL ---
+        let currentMode = 1; // 1: Solo, 2: Duel, 4: Squad
+        let mathOperation = 'all'; // 'all', 'mult', 'div'
+        let timerLimit = 0; // 0 = tanpa limit, 10, 20 detik
+        let isBgmOn = false;
+        let audioCtx = null;
+        let bgmInterval = null;
+        let bgmStep = 0;
+
+        // Menyimpan status untuk setiap player yang sedang bermain
+        // max 4 players
+        let players = [];
+
+        // Inisialisasi Audio Context secara lazy setelah interaksi pertama
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // --- SISTEM PEMBUAT SOAL (MATEMATIKA KELAS 2 SD) ---
+        function generateQuestion() {
+            let op = mathOperation;
+            if (op === 'all') {
+                op = Math.random() < 0.5 ? 'mult' : 'div';
+            }
+
+            let num1, num2, answer, questionText;
+
+            if (op === 'mult') {
+                // Perkalian 1-10
+                num1 = Math.floor(Math.random() * 10) + 1;
+                num2 = Math.floor(Math.random() * 10) + 1;
+                answer = num1 * num2;
+                questionText = `${num1} × ${num2}`;
+            } else {
+                // Pembagian sederhana (hasil bilangan bulat)
+                // num2 (pembagi) antara 1-10, hasil antara 1-10
+                let hasil = Math.floor(Math.random() * 10) + 1;
+                num2 = Math.floor(Math.random() * 9) + 2; // Pembagi 2-10 biar seru
+                num1 = hasil * num2;
+                answer = hasil;
+                questionText = `${num1} ÷ ${num2}`;
+            }
+
+            // Generate Opsi Pilihan Ganda (4 Opsi unik)
+            let options = new Set();
+            options.add(answer);
+
+            while (options.size < 4) {
+                let offset = Math.floor(Math.random() * 9) - 4; // -4 s/d +4
+                let fakeAnswer = answer + offset;
+                if (fakeAnswer > 0 && fakeAnswer !== answer && fakeAnswer <= 100) {
+                    options.add(fakeAnswer);
+                } else {
+                    options.add(Math.floor(Math.random() * 50) + 1);
+                }
+            }
+
+            // Ubah Set ke Array lalu Acak
+            let optionsArray = Array.from(options);
+            optionsArray.sort(() => Math.random() - 0.5);
+
+            return {
+                questionText: questionText,
+                answer: answer,
+                options: optionsArray
+            };
+        }
+
+        // --- EFEK SUARA PROCEDURAL (WEB AUDIO API) ---
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    // Suara lompatan katak (sweeping pitch up)
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(450, now + 0.25);
+
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } 
+                else if (type === 'correct') {
+                    // Suara jawaban benar (Arpeggio Ceria)
+                    const playTone = (freq, delay, duration) => {
+                        let osc = audioCtx.createOscillator();
+                        let gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + delay);
+                        gain.gain.setValueAtTime(0.2, now + delay);
+                        gain.gain.linearRampToValueAtTime(0.01, now + delay + duration);
+                        osc.start(now + delay);
+                        osc.stop(now + delay + duration);
+                    };
+                    playTone(523.25, 0, 0.1);     // C5
+                    playTone(659.25, 0.08, 0.1);  // E5
+                    playTone(783.99, 0.16, 0.15); // G5
+                    playTone(1046.50, 0.24, 0.25); // C6
+                } 
+                else if (type === 'splash') {
+                    // Suara Byurrr! Katak masuk air (White Noise bandpass filtered + sweep down)
+                    let bufferSize = audioCtx.sampleRate * 0.4;
+                    let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    let data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+
+                    let noiseNode = audioCtx.createBufferSource();
+                    noiseNode.buffer = buffer;
+
+                    let filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1000, now);
+                    filter.frequency.exponentialRampToValueAtTime(100, now + 0.4);
+
+                    let gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+
+                    noiseNode.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    noiseNode.start(now);
+                    noiseNode.stop(now + 0.4);
+                }
+            } catch (e) {
+                console.warn("Audio Context bermasalah:", e);
+            }
+        }
+
+        // --- BGM PROCEDURAL SEDERHANA ---
+        // Musik santai dengan tangga nada pentatonis hijau kolam
+        function startProceduralBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+            if (!isBgmOn) return;
+
+            initAudio();
+            const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // Pentatonis C (C, D, E, G, A, C)
+            const pattern = [0, 2, 4, 3, 5, 4, 2, 3]; // Alur melodi sederhana
+
+            bgmStep = 0;
+            bgmInterval = setInterval(() => {
+                if (!isBgmOn || !audioCtx) return;
+                try {
+                    const now = audioCtx.currentTime;
+                    let noteIdx = pattern[bgmStep % pattern.length];
+                    let freq = notes[noteIdx];
+
+                    // Bass Pengiring lambat
+                    if (bgmStep % 4 === 0) {
+                        let oscB = audioCtx.createOscillator();
+                        let gainB = audioCtx.createGain();
+                        oscB.connect(gainB);
+                        gainB.connect(audioCtx.destination);
+                        oscB.type = 'triangle';
+                        oscB.frequency.setValueAtTime(freq / 2, now);
+                        gainB.gain.setValueAtTime(0.12, now);
+                        gainB.gain.linearRampToValueAtTime(0.001, now + 0.7);
+                        oscB.start(now);
+                        oscB.stop(now + 0.75);
+                    }
+
+                    // Melodi utama
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+
+                    bgmStep++;
+                } catch(err) {}
+            }, 400); // 150 BPM santai
+        }
+
+        function toggleBGM() {
+            initAudio();
+            isBgmOn = !isBgmOn;
+            const btn = document.getElementById('btn-bgm');
+            const icon = document.getElementById('bgm-icon');
+
+            if (isBgmOn) {
+                icon.textContent = "🔊";
+                btn.classList.add('border-yellow-400', 'bg-emerald-700');
+                startProceduralBGM();
+            } else {
+                icon.textContent = "🔇";
+                btn.classList.remove('border-yellow-400', 'bg-emerald-700');
+                if (bgmInterval) {
+                    clearInterval(bgmInterval);
+                    bgmInterval = null;
+                }
+            }
+        }
+
+        // --- SISTEM PEMILIHAN SETTING DI MENU ---
+        function setOperation(op) {
+            mathOperation = op;
+            document.querySelectorAll("[id^='opt-op-']").forEach(b => {
+                b.classList.remove('border-yellow-400', 'bg-yellow-500/20', 'text-yellow-300');
+                b.classList.add('border-emerald-700', 'bg-emerald-900/40', 'text-emerald-300');
+            });
+            const selectedBtn = document.getElementById(`opt-op-${op}`);
+            selectedBtn.classList.remove('border-emerald-700', 'bg-emerald-900/40', 'text-emerald-300');
+            selectedBtn.classList.add('border-yellow-400', 'bg-yellow-500/20', 'text-yellow-300');
+            playSound('jump');
+        }
+
+        function setTimerOption(seconds) {
+            timerLimit = seconds;
+            document.querySelectorAll("[id^='opt-time-']").forEach(b => {
+                b.classList.remove('border-yellow-400', 'bg-yellow-500/20', 'text-yellow-300');
+                b.classList.add('border-emerald-700', 'bg-emerald-900/40', 'text-emerald-300');
+            });
+            const key = seconds === 0 ? 'off' : seconds;
+            const selectedBtn = document.getElementById(`opt-time-${key}`);
+            selectedBtn.classList.remove('border-emerald-700', 'bg-emerald-900/40', 'text-emerald-300');
+            selectedBtn.classList.add('border-yellow-400', 'bg-yellow-500/20', 'text-yellow-300');
+            playSound('jump');
+        }
+
+        function toggleHelp() {
+            const modal = document.getElementById('help-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // --- LAYAR PENUH CONTROL ---
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        // --- MENYIAPKAN GAME DAN INSTANCE PEMAIN ---
+        function startGame(mode) {
+            initAudio();
+            currentMode = mode;
+            document.getElementById('menu-screen').classList.add('hidden');
+            const arena = document.getElementById('game-screen');
+            arena.classList.remove('hidden');
+            arena.innerHTML = ''; // bersihkan arena
+
+            // Buat Grid Layout Sesuai Mode
+            let gridClass = "w-full h-full grid gap-4 ";
+            if (mode === 1) {
+                gridClass += "grid-cols-1";
+            } else if (mode === 2) {
+                // Landscape split kiri-kanan, mobile portrait split atas-bawah
+                gridClass += "grid-cols-1 md:grid-cols-2";
+            } else {
+                // 2x2 grid untuk 4 pemain
+                gridClass += "grid-cols-2 grid-rows-2";
+            }
+            arena.className = gridClass + " relative z-10 p-2 text-white bg-teal-950/20";
+
+            // Inisialisasi Data Tiap Player
+            players = [];
+            for (let i = 0; i < mode; i++) {
+                players.push({
+                    id: i + 1,
+                    name: `Pemain ${i + 1}`,
+                    score: 0,
+                    lives: 3,
+                    currentQuestion: generateQuestion(),
+                    timerLeft: timerLimit,
+                    timerId: null,
+                    isAnimate: false, // mencegah double-click saat melompat
+                    lastChoiceIdx: null,
+                    isGameOver: false
+                });
+
+                // Buat Elemen DOM untuk Setiap Area Player
+                createPlayerArea(players[i], arena);
+                startPlayerTimer(players[i]);
+            }
+        }
+
+        // --- GENERATE AREA INDIVIDUAL PEMAIN ---
+        function createPlayerArea(player, container) {
+            const card = document.createElement('div');
+            card.id = `player-card-${player.id}`;
+            card.className = "relative rounded-3xl border border-emerald-600/40 bg-gradient-to-b from-teal-900/60 to-emerald-950/90 overflow-hidden flex flex-col justify-between p-3 md:p-4 shadow-xl select-none min-h-0";
+
+            // Header Info Pemain
+            let headerHtml = `
+                <div class="flex justify-between items-center bg-black/40 px-3 py-1.5 rounded-2xl border border-white/5 z-10">
+                    <span class="font-bold text-sm md:text-base tracking-wider text-green-300 flex items-center space-x-1.5">
+                        <span class="w-3 h-3 rounded-full bg-green-400 inline-block animate-pulse"></span>
+                        <span>${player.name}</span>
+                    </span>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs bg-emerald-800 text-yellow-300 px-2 py-0.5 rounded-md font-semibold">SKOR: <span id="p-score-${player.id}">0</span></span>
+                        <div class="flex space-x-1 text-red-500 text-sm md:text-base" id="p-lives-${player.id}">
+                            ❤️❤️❤️
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Display Soal Matematika
+            let questionHtml = `
+                <div class="text-center my-2 md:my-4 z-10">
+                    <div class="inline-block bg-yellow-400 text-emerald-950 font-black text-2xl md:text-4xl px-6 py-2 rounded-2xl shadow-lg border-2 border-white tracking-widest" id="p-question-${player.id}">
+                        ${player.currentQuestion.questionText} = ?
+                    </div>
+                    <!-- Progres Timer Bar -->
+                    ${timerLimit > 0 ? `
+                        <div class="w-32 mx-auto bg-black/40 h-2 rounded-full mt-2 overflow-hidden border border-white/5">
+                            <div id="p-timer-bar-${player.id}" class="h-full bg-yellow-400 transition-all duration-1000" style="width: 100%"></div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // Visual Kolam & Animasi Katak (Tengah)
+            // Menggunakan absolute layers di dalam wadah relatif setinggi flex-1
+            let pondHtml = `
+                <div class="flex-1 relative min-h-[160px] md:min-h-[200px] rounded-2xl overflow-hidden border border-emerald-800/50 bg-teal-950/40 my-2 shadow-inner" id="p-pond-${player.id}">
+                    <!-- Partikel air kolam -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-teal-900/80 to-emerald-950/60 pointer-events-none opacity-50"></div>
+                    
+                    <!-- Bunga Teratai Hiasan -->
+                    <div class="absolute top-2 left-4 text-xl opacity-60">🌸</div>
+                    <div class="absolute top-6 right-8 text-xl opacity-40">🌸</div>
+                    
+                    <!-- Area Daun Pilihan (4 Daun Teratai Berjajar) -->
+                    <div class="absolute top-[15%] left-0 right-0 px-2 md:px-4 flex justify-around items-center z-10">
+                        ${[0,1,2,3].map(idx => {
+                            const ans = player.currentQuestion.options[idx];
+                            return `
+                                <div id="p-leaf-${player.id}-${idx}" 
+                                     onclick="handleChoice(${player.id}, ${idx})" 
+                                     class="relative cursor-pointer transition-all duration-300 transform hover:scale-110 active:scale-95 flex flex-col items-center ${idx % 2 === 0 ? 'floating-leaf' : 'floating-leaf-delayed'} w-[22%]">
+                                    
+                                    <!-- Angka Jawaban -->
+                                    <span class="absolute z-20 text-emerald-950 font-black text-sm md:text-xl filter drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] -mt-1" id="p-val-${player.id}-${idx}">
+                                        ${ans}
+                                    </span>
+                                    
+                                    <!-- Daun Teratai SVG -->
+                                    <svg class="w-full h-auto text-emerald-400 fill-current drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)] filter hover:text-green-300 transition-colors" viewBox="0 0 100 80">
+                                        <ellipse cx="50" cy="40" rx="45" ry="30" />
+                                        <path d="M 50 10 L 50 70 M 10 40 L 90 40" stroke="#15803d" stroke-width="2" opacity="0.3" />
+                                        <!-- Potongan daun khas teratai -->
+                                        <polygon points="50,40 85,20 95,40" fill="#0d2b1d" opacity="0.4" />
+                                    </svg>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Tempat Mulai Katak (Daun Utama di Bawah) -->
+                    <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-24 md:w-28 text-center z-10">
+                        <!-- Daun landasan -->
+                        <svg class="w-full h-auto text-emerald-500 fill-current drop-shadow-md" viewBox="0 0 100 40">
+                            <ellipse cx="50" cy="20" rx="45" ry="15" />
+                        </svg>
+                        
+                        <!-- Katak (Diposisi absolut agar bisa dipindah dengan JS secara mulus) -->
+                        <div id="p-frog-${player.id}" class="absolute -top-10 left-1/2 transform -translate-x-1/2 transition-all duration-500 ease-out z-20 w-12 h-12 md:w-16 md:h-16">
+                            <svg class="w-full h-full frog-breathe" viewBox="0 0 100 100">
+                                <!-- Badan Katak -->
+                                <ellipse cx="50" cy="65" rx="35" ry="25" fill="#22c55e" />
+                                <ellipse cx="50" cy="72" rx="22" ry="15" fill="#fef08a" />
+                                <!-- Mata Kiri -->
+                                <circle cx="32" cy="40" r="14" fill="#22c55e" />
+                                <circle cx="32" cy="40" r="10" fill="white" />
+                                <circle cx="34" cy="40" r="5" fill="black" />
+                                <!-- Mata Kanan -->
+                                <circle cx="68" cy="40" r="14" fill="#22c55e" />
+                                <circle cx="68" cy="40" r="10" fill="white" />
+                                <circle cx="66" cy="40" r="5" fill="black" />
+                                <!-- Mulut Senyum -->
+                                <path d="M 42 66 Q 50 74, 58 66" stroke="#166534" stroke-width="3" fill="none" stroke-linecap="round" />
+                                <!-- Pipi pink -->
+                                <circle cx="28" cy="63" r="4" fill="#f87171" opacity="0.6" />
+                                <circle cx="72" cy="63" r="4" fill="#f87171" opacity="0.6" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Indikator Efek Teks Pop Up (Benar/Salah) -->
+                    <div id="p-feedback-${player.id}" class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300 z-30">
+                        <span class="text-3xl md:text-5xl font-extrabold filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" id="p-feedback-text-${player.id}"></span>
+                    </div>
+                </div>
+            `;
+
+            // Kontrol Input Responsif (Bawah) - Mempermudah jika bermain di layar sentuh
+            let controlsHtml = `
+                <div class="mt-2 grid grid-cols-4 gap-2 z-10">
+                    ${[0,1,2,3].map(idx => `
+                        <button onclick="handleChoice(${player.id}, ${idx})" 
+                                class="bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-900 border border-emerald-600/50 py-2.5 md:py-3 rounded-2xl font-bold transition-all text-xs md:text-sm shadow-md flex flex-col items-center justify-center transform active:scale-95">
+                            <span class="text-green-300 text-[10px] md:text-xs block opacity-75">Opsi ${idx + 1}</span>
+                            <span class="text-yellow-300 text-sm md:text-lg font-black mt-0.5" id="p-btn-val-${player.id}-${idx}">
+                                ${player.currentQuestion.options[idx]}
+                            </span>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            card.innerHTML = headerHtml + questionHtml + pondHtml + controlsHtml;
+            container.appendChild(card);
+        }
+
+        // --- SISTEM TIMED GAME ---
+        function startPlayerTimer(player) {
+            if (timerLimit === 0) return;
+            player.timerLeft = timerLimit;
+            
+            if (player.timerId) clearInterval(player.timerId);
+
+            player.timerId = setInterval(() => {
+                if (player.isGameOver) {
+                    clearInterval(player.timerId);
+                    return;
+                }
+
+                player.timerLeft--;
+                const bar = document.getElementById(`p-timer-bar-${player.id}`);
+                if (bar) {
+                    const pct = (player.timerLeft / timerLimit) * 100;
+                    bar.style.width = `${pct}%`;
+                    if (pct < 30) {
+                        bar.className = "h-full bg-red-500 transition-all duration-1000";
+                    } else {
+                        bar.className = "h-full bg-yellow-400 transition-all duration-1000";
+                    }
+                }
+
+                // Kehabisan waktu dianggap salah
+                if (player.timerLeft <= 0) {
+                    clearInterval(player.timerId);
+                    processAnswer(player, -1, false); // -1 indeks tidak ada, langsung salah
+                }
+            }, 1000);
+        }
+
+        // --- HANDLER INTERAKSI JAWABAN ---
+        function handleChoice(playerId, choiceIdx) {
+            const player = players[playerId - 1];
+            if (player.isGameOver || player.isAnimate) return;
+
+            player.isAnimate = true;
+            player.lastChoiceIdx = choiceIdx;
+
+            const selectedAnswer = player.currentQuestion.options[choiceIdx];
+            const isCorrect = (selectedAnswer === player.currentQuestion.answer);
+
+            // Jalankan Logika Animasi & Penilaian
+            processAnswer(player, choiceIdx, isCorrect);
+        }
+
+        function processAnswer(player, choiceIdx, isCorrect) {
+            const frog = document.getElementById(`p-frog-${player.id}`);
+            const leaf = document.getElementById(`p-leaf-${player.id}-${choiceIdx}`);
+            const pond = document.getElementById(`p-pond-${player.id}`);
+            const feedback = document.getElementById(`p-feedback-${player.id}`);
+            const feedbackText = document.getElementById(`p-feedback-text-${player.id}`);
+
+            // Berhenti sementara waktu
+            if (player.timerId) clearInterval(player.timerId);
+
+            if (isCorrect) {
+                // --- LOGIKA JAWABAN BENAR ---
+                playSound('jump');
+                setTimeout(() => playSound('correct'), 200);
+
+                // Dapatkan koordinat daun pilihan relatif terhadap kolam
+                if (leaf && frog) {
+                    const leafRect = leaf.getBoundingClientRect();
+                    const pondRect = pond.getBoundingClientRect();
+                    
+                    // Hitung delta translasi
+                    const targetX = (leafRect.left + leafRect.width / 2) - (pondRect.left + pondRect.width / 2);
+                    const targetY = - (pondRect.bottom - leafRect.bottom - 20);
+
+                    // Animasikan Lompatan Katak (Efek Parabola sederhana lewat CSS)
+                    frog.style.transform = `translate(calc(-50% + ${targetX}px), ${targetY}px) scale(1.3)`;
+                }
+
+                // Muncul Teks Umpan Balik Positif
+                const congrats = ["Hebat!", "Pintar!", "Luar Biasa!", "Mantap!", "Betul!", "Yippee!"];
+                feedbackText.textContent = congrats[Math.floor(Math.random() * congrats.length)];
+                feedbackText.className = "text-3xl md:text-5xl font-extrabold text-green-400 filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]";
+                feedback.style.opacity = "1";
+                feedback.style.transform = "scale(1.2)";
+
+                // Tambahkan Skor
+                player.score += 10;
+                document.getElementById(`p-score-${player.id}`).textContent = player.score;
+
+                // Transisi ke Soal Berikutnya
+                setTimeout(() => {
+                    // Reset Posisi Katak
+                    frog.style.transform = "translateX(-50%) scale(1)";
+                    feedback.style.opacity = "0";
+                    feedback.style.transform = "scale(1)";
+
+                    // Update Soal Baru
+                    player.currentQuestion = generateQuestion();
+                    updatePlayerUIData(player);
+
+                    // Lepaskan lock animasi
+                    player.isAnimate = false;
+                    
+                    // Mulai timer kembali
+                    startPlayerTimer(player);
+                }, 1300);
+
+            } else {
+                // --- LOGIKA JAWABAN SALAH ---
+                playSound('jump');
+                setTimeout(() => playSound('splash'), 250);
+
+                // Nyawa Berkurang
+                player.lives--;
+                updateLivesUI(player);
+
+                if (leaf && frog) {
+                    const leafRect = leaf.getBoundingClientRect();
+                    const pondRect = pond.getBoundingClientRect();
+                    
+                    const targetX = (leafRect.left + leafRect.width / 2) - (pondRect.left + pondRect.width / 2);
+                    const targetY = - (pondRect.bottom - leafRect.bottom - 20);
+
+                    // Katak melompat tapi meleset/jatuh ke samping daun teratai
+                    frog.style.transform = `translate(calc(-50% + ${targetX}px), ${targetY}px) scale(0.9)`;
+                    
+                    // Animasikan daun teratai terhempas / tenggelam sebentar
+                    leaf.classList.add('leaf-fall');
+
+                    // Efek Riak Air di tempat katak jatuh
+                    setTimeout(() => {
+                        createWaterRipple(pond, leafRect.left - pondRect.left + leafRect.width/2, leafRect.top - pondRect.top + leafRect.height/2);
+                        // Katak tenggelam ke dalam kolam
+                        frog.style.transform = `translate(calc(-50% + ${targetX}px), ${targetY + 80}px) scale(0) rotate(90deg)`;
+                        frog.style.opacity = "0";
+                    }, 350);
+                } else {
+                    // Jika kehabisan waktu tanpa klik daun
+                    createWaterRipple(pond, pond.offsetWidth / 2, pond.offsetHeight / 2);
+                    frog.style.transform = "translate(-50%, 80px) scale(0)";
+                    frog.style.opacity = "0";
+                }
+
+                // Muncul Teks Umpan Balik Negatif
+                feedbackText.textContent = player.lives <= 0 ? "GUGUR!" : "BYURR! Salah";
+                feedbackText.className = "text-3xl md:text-5xl font-extrabold text-red-400 filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]";
+                feedback.style.opacity = "1";
+
+                // Evaluasi status mati/gugur
+                setTimeout(() => {
+                    // Hapus animasi daun jatuh
+                    if (leaf) leaf.classList.remove('leaf-fall');
+
+                    // Munculkan katak kembali di dermaga awal
+                    frog.style.opacity = "1";
+                    frog.style.transform = "translateX(-50%) scale(1)";
+                    feedback.style.opacity = "0";
+
+                    if (player.lives <= 0) {
+                        player.isGameOver = true;
+                        document.getElementById(`player-card-${player.id}`).classList.add('opacity-40', 'grayscale', 'transition-all', 'duration-500');
+                        checkGameEndStatus();
+                    } else {
+                        // Soal baru dan lanjut bermain
+                        player.currentQuestion = generateQuestion();
+                        updatePlayerUIData(player);
+                        player.isAnimate = false;
+                        startPlayerTimer(player);
+                    }
+                }, 1500);
+            }
+        }
+
+        // Efek Riak Air Dinamis
+        function createWaterRipple(parent, x, y) {
+            const ripple = document.createElement('div');
+            ripple.className = 'water-ripple';
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            parent.appendChild(ripple);
+
+            // Hapus ripple setelah animasi selesai
+            setTimeout(() => {
+                ripple.remove();
+            }, 1200);
+        }
+
+        // --- UPDATE TAMPILAN DATA TIAP PERTANYAAN BARU ---
+        function updatePlayerUIData(player) {
+            // Papan Soal
+            const qText = document.getElementById(`p-question-${player.id}`);
+            if (qText) qText.textContent = `${player.currentQuestion.questionText} = ?`;
+
+            // Opsi Jawaban pada Daun
+            for (let i = 0; i < 4; i++) {
+                const valText = document.getElementById(`p-val-${player.id}-${i}`);
+                if (valText) valText.textContent = player.currentQuestion.options[i];
+
+                const btnText = document.getElementById(`p-btn-val-${player.id}-${i}`);
+                if (btnText) btnText.textContent = player.currentQuestion.options[i];
+            }
+        }
+
+        // --- UPDATE NYAWA (HATI) ---
+        function updateLivesUI(player) {
+            const container = document.getElementById(`p-lives-${player.id}`);
+            if (!container) return;
+            let heartHtml = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < player.lives) {
+                    heartHtml += '❤️';
+                } else {
+                    heartHtml += '🖤';
+                }
+            }
+            container.innerHTML = heartHtml;
+        }
+
+        // --- VALIDASI AKHIR PERMAINAN ---
+        function checkGameEndStatus() {
+            // Game berakhir jika semua pemain gugur
+            const allOver = players.every(p => p.isGameOver);
+            if (allOver) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            // Hentikan semua timer aktif
+            players.forEach(p => {
+                if (p.timerId) clearInterval(p.timerId);
+            });
+
+            // Urutkan peringkat berdasarkan skor terbanyak
+            const ranked = [...players].sort((a, b) => b.score - a.score);
+
+            const resultsContainer = document.getElementById('gameover-results');
+            resultsContainer.innerHTML = '';
+
+            ranked.forEach((p, idx) => {
+                let medal = "🎖️";
+                if (idx === 0) medal = "🥇 Juaranya!";
+                else if (idx === 1) medal = "🥈 Hebat!";
+                else if (idx === 2) medal = "🥉 Mantap!";
+
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center p-4 bg-emerald-900/50 border border-emerald-500/30 rounded-2xl";
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xl">${medal}</span>
+                        <span class="font-bold text-green-200 text-lg">${p.name}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-2xl font-black text-yellow-300">${p.score} pt</span>
+                        <span class="text-[10px] text-green-400">Selamat!</span>
+                    </div>
+                `;
+                resultsContainer.appendChild(row);
+            });
+
+            // Tampilkan Modal Game Over
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            document.getElementById('gameover-modal').classList.add('hidden');
+            startGame(currentMode);
+        }
+
+        function backToMenu() {
+            // Reset & Hentikan timer permainan
+            players.forEach(p => {
+                if (p.timerId) clearInterval(p.timerId);
+            });
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+            playSound('jump');
+        }
+
+        // --- SISTEM PARTIKEL HUJAN RINGAN (CANVAS) ---
+        const canvas = document.getElementById('rain-canvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const maxDrops = 40; // Hujan ringan ramah performa
+        const drops = [];
+
+        for (let i = 0; i < maxDrops; i++) {
+            drops.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                length: Math.random() * 12 + 8,
+                speed: Math.random() * 4 + 4,
+                opacity: Math.random() * 0.25 + 0.1
+            });
+        }
+
+        function drawRain() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.strokeStyle = 'rgba(156, 163, 175, 0.5)'; // warna abu-abu transparan air
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < maxDrops; i++) {
+                const d = drops[i];
+                ctx.beginPath();
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x - 1, d.y + d.length); // hujan sedikit miring
+                ctx.stroke();
+
+                d.y += d.speed;
+                d.x -= 0.5;
+
+                // Reset drop yang jatuh di bawah layar
+                if (d.y > height) {
+                    d.y = -d.length;
+                    d.x = Math.random() * width;
+                }
+            }
+            requestAnimationFrame(drawRain);
+        }
+
+        // Jalankan Efek Cuaca secara real-time
+        drawRain();
+    </script>
+</body>
+</html>
+
+
+### Ringkasan & Fitur Utama Aplikasi:
+1. **Teknologi Berperforma Tinggi**: Sepenuhnya mandiri, menggunakan Tailwind CSS untuk estetika, Canvas untuk hujan interaktif, dan HTML5 SVG untuk gambar katak serta daun agar memiliki skalabilitas visual yang mulus di berbagai ukuran layar.
+2. **Web Audio API**: Efek suara melompat (*jump sound*), suara jawaban benar (*cheer arpeggio*), suara tercebur (*splash sound*), dan musik latar (*background music*) semuanya dibuat menggunakan sintesis suara bawaan peramban (tanpa koneksi internet atau link audio luar yang bisa rusak sewaktu-waktu).
+3. **Pilihan Soal Adaptif**: Menyediakan pilihan jenis soal campuran, khusus perkalian, atau pembagian sederhana dengan rentang perkalian 1-10 yang ramah untuk anak kelas 2 SD.
+4. **Berbagai Mode Bermain**: 
+   * **Solo Mode** untuk belajar mandiri.
+   * **Duel Mode** menggunakan sistem belah layar agar 2 anak bisa beradu tangkas di satu gawai.
+   * **Squad Mode** dengan pembagian grid 2x2 yang dapat dimainkan hingga 4 anak secara lokal di PC maupun Tablet.
